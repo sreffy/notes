@@ -302,3 +302,144 @@ where vend_id =1003;
 ### 分组数据
 
 __GROUP BY 数据分组__
+
+(1)GROUP BY子句可以包含任意数目的列。这使得能对分组进行嵌套，
+为数据分组提供更细致的控制。
+
+(2)如果在GROUP BY子句中嵌套了分组，数据将在最后规定的分组上
+进行汇总。换句话说，在建立分组时，指定的所有列都一起计算
+（所以不能从个别的列取回数据）。
+
+(3)GROUP BY子句中列出的每个列都必须是检索列或有效的表达式
+（但不能是聚集函数）。如果在SELECT中使用表达式，则必须在
+GROUP BY子句中指定相同的表达式。不能使用别名。
+
+(4)除聚集计算语句外， SELECT语句中的每个列都必须在GROUP BY子
+句中给出。
+
+(5)如果分组列中具有NULL值，则NULL将作为一个分组返回。如果列
+中有多行NULL值，它们将分为一组。
+
+(6)GROUP BY子句必须出现在WHERE子句之后， ORDER BY子句之前。
+
+select ven_id, count(\*) as num_pords
+from products
+group by ven_id;
+
+__Having 子句过滤分组__
+
+select cust_id,COUNT(\*) as orders
+from orders
+group by cust_id
+having count(\*)>=2
+
+这里有另一种理解方法，WHERE在数据分组前进行过滤， HAVING在数据分组后进行过滤。这是一个重要的区别， WHERE排除的行不包括在分组中。这可能会改变计算值，从而影响HAVING子句中基于这些值过滤掉的分组。
+
+__GROUP BY 和 ORDER BY联用保证分组数据排序__
+
+### 子查询
+
+将两个select查询语句组合使用，在WHERE子句中使用子查询，应该保证SELECT语句具有与WHERE子句中相同数目的列。通常，子查询将返回单个列并且与单个列匹配，但如果需要也可以
+使用多个列。
+
+select cust_name,cust_state
+      (select count(\*)
+        from orders
+        where orders.cust_id = customers.cust_id) as orders
+from customers
+order by cust_name;
+
+
+### 联结表
+
+__外键（foreign key） 外键为某个表中的一列，它包含另一个表的主键值，定义了两个表之间的关系__
+
+select vend_name, prod_name, prod_price
+from vendors, products
+where vendors.ven_id= products.vend_id
+order by vend_name,prod_name;
+
+__在引用的列可能出现二义性时，必须使用完全限定列名（用一个点分隔的表名和列名）。如果引用一个没有用表名限制的具有二义性的列名， MySQL将返回错误。__
+
+__笛卡儿积（cartesian product） 由没有联结条件的表关系返回
+的结果为笛卡儿积。检索出的行的数目将是第一个表中的行数乘
+以第二个表中的行数，因此应该保证所有联结都有where子句作为联结条件__
+
+__内部联结（等值联结）__
+
+select vend_name, prod_name, prod_price
+from vendors, products
+where vendors inner join products
+on vendors.ven_id= products.vend_id
+order by vend_name,prod_name;
+
+两个表之间的关系是FROM子句的组成部分，以INNER
+JOIN指定。在使用这种语法时，联结条件用特定的ON子句而不是WHERE
+子句给出。传递给ON的实际条件与传递给WHERE的相同
+
+__where子句中使用AND可以表示多个联结关系，进而联结多个表，同时还可以定义行筛选的标准__
+
+__对表使用别名简化代码__
+
+select cust_name,cust_concat
+from customers as c, orders as o, ordertimes as oi
+where c.cust_id = o.cust_id
+  and oi.order_num = o.order_num
+  and prod_id ='TNT2'
+
+
+__自联结__
+
+select p1.prod_id, p1.prod_name
+from products as p1, products as p2
+where p1.vend_id = p2.vend_id
+  and p2.prod_id ='DTNTR';
+
+自联结通常作为外部语句用来替代从相同表中检索数据时使用的子查询语句。虽然最终的结果是
+相同的，但有时候处理联结远比处理子查询快得多。
+
+
+__自然联结__
+
+自然联结排除多次出现，使每个列只返回一次
+
+这一
+般是通过对表使用通配符（SELECT \*），对所有其他表的列使用明确的子
+集来完成的
+
+__外部联结__
+
+许多联结将一个表中的行与另一个表中的行相关联。但有时候会需要包含没有关联行的那些行。如：
+
+(1)对每个客户下了多少订单进行计数，包括那些至今尚未下订单的
+客户；
+
+(2)列出所有产品以及订购数量，包括没有人订购的产品；
+
+(3)计算平均销售规模，包括那些至今尚未下订单的客户。
+
+
+select customers.cust_id, orders.order_num
+from customers left outer join orders
+on customers.cust_id = orders.cust_id;
+
+__在使用OUTER JOIN语法时，必须使用RIGHT或LEFT关键字
+指定包括其所有行的表（RIGHT指出的是OUTER JOIN右边的表，而LEFT
+指出的是OUTER JOIN左边的表）__
+
+
+__使用联结和联结条件__
+
+注意所使用的联结类型。一般我们使用内部联结，但使用外部联
+结也是有效的。
+
+保证使用正确的联结条件，否则将返回不正确的数据。
+
+应该总是提供联结条件，否则会得出笛卡儿积。
+
+在一个联结中可以包含多个表，甚至对于每个联结可以采用不同
+的联结类型。虽然这样做是合法的，一般也很有用，但应该在一
+起测试它们前，分别测试每个联结。这将使故障排除更为简单。
+
+
+### 组合查询
