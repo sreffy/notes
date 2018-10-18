@@ -443,3 +443,61 @@ __使用联结和联结条件__
 
 
 ### 组合查询
+
+有两种基本情况，其中需要使用组合查询：
+
+(1)在单个查询中从不同的表返回类似结构的数据；
+
+(2)对单个表执行多个查询，按单个查询返回数据。
+
+select ven_id, prod_id,prod_price
+from products
+where prod_price <=5
+union
+select vend_id, prod_id, prod_price
+from products
+where ven_id in (1001,1002);
+
+这条语句等价为：
+
+select vend_id, prod_id, prod_price
+from products
+where prod_price <=5
+  or vend_id in (1001,1002);
+
+__UNION从查询结果集中自动去除了重复的行,这是UNION的默认行为，但是如果需要，可以改变它。事实上，如果想返回所有匹配行，可使用UNION ALL而不是UNION__
+
+在用UNION组合查询时，只能使用一条ORDER BY子句，它必须出现在最后一条SELECT语句之后。
+
+### 全文本搜索
+
+一般在创建表时启用全文本搜索。 CREATE TABLE语句接受FULLTEXT子句，它给出被索引列的一个逗号分隔的列表。
+
+__使用Match(),Against()进行全文本搜索__
+
+select note_test
+from productnotes
+where Match(note_text) Against('rabbit');
+
+
+
+__case when 函数__
+
+__简单 case函数__
+
+case sex
+when '1' then '男'
+when '2' then '女'
+else '其他' end
+
+__case搜索函数__
+
+case when sex='1' then '男'
+when sex='2' then '女'
+else '其他' end
+
+__有一个需要注意的问题，Case函数只返回第一个符合条件的值，剩下的Case部分将会被自动忽略__
+--比如说，下面这段SQL，你永远无法得到“第二类”这个结果
+CASE WHEN col_1 IN ( 'a', 'b') THEN '第一类'
+WHEN col_1 IN ('a')       THEN '第二类'
+ELSE'其他' END
